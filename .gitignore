@@ -1,0 +1,9 @@
+# Entorno y credenciales (no subir nunca)
+.env
+.venv/
+venv/
+
+# Caché
+__pycache__/
+*.py[cod]
+.pytest_cache/
