@@ -8,8 +8,15 @@ class EntradaVacia(Exception):
     """El archivo no tiene nada que analizar. Se avisa sin llamar a Ollama."""
 
 
+class ErrorArchivo(Exception):
+    """El archivo no se puede leer (corrupto, renombrado o en un formato no admitido)."""
+
+
 def desde_pdf(cliente, config, datos: bytes, herramienta) -> ResultadoLargo:
-    texto = extraer_texto_pdf(datos)
+    try:
+        texto = extraer_texto_pdf(datos)
+    except Exception as e:  # pdfplumber/pdfminer lanzan varios tipos según el fallo
+        raise ErrorArchivo(f"No se pudo leer el PDF: {e or type(e).__name__}") from e
     if not texto.strip():
         raise EntradaVacia("El PDF no tiene texto que leer. Si es un escaneado, pásale antes un OCR.")
     return herramienta(cliente, config, texto)
@@ -17,7 +24,10 @@ def desde_pdf(cliente, config, datos: bytes, herramienta) -> ResultadoLargo:
 
 def desde_audio(cliente, config, datos: bytes, extension: str, herramienta, *,
                 transcribir=audio.transcribir) -> tuple[str, ResultadoLargo]:
-    transcripcion = transcribir(datos, extension, config.modelo_whisper)
+    try:
+        transcripcion = transcribir(datos, extension, config.modelo_whisper)
+    except Exception as e:  # ffmpeg/Whisper con un audio ilegible
+        raise ErrorArchivo(f"No se pudo transcribir el audio: {e or type(e).__name__}") from e
     if not transcripcion.strip():
         raise EntradaVacia("No se ha detectado voz en el audio.")
     return transcripcion, herramienta(cliente, config, transcripcion)

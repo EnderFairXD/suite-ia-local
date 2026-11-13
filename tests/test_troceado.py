@@ -101,3 +101,16 @@ def test_propaga_el_aviso_de_recorte():
     r = procesar_largo(cliente, _config(8192), "texto",
                        sistema_final=FINAL, sistema_parte=PARTE, sistema_combinar=COMBINAR)
     assert r.posible_recorte is True
+
+
+def test_contexto_demasiado_pequeno_da_error_claro_sin_llamar_a_ollama():
+    import pytest
+
+    from ia_local.llm import ErrorOllama
+
+    cliente = ClienteFalso(["x"])
+    with pytest.raises(ErrorOllama) as e:
+        procesar_largo(cliente, _config(1024), "Cláusula. " * 300,
+                       sistema_final=FINAL, sistema_parte=PARTE * 40, sistema_combinar=COMBINAR * 40)
+    assert "CONTEXTO" in str(e.value) and "1024" in str(e.value)
+    assert cliente.llamadas == []

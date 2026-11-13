@@ -40,3 +40,26 @@ def test_audio_sin_voz_no_llama_a_ollama():
         desde_audio(cliente, CONFIG, b"audio", "wav", reuniones.minuta, transcribir=lambda *a: "  ")
     assert "voz" in str(e.value)
     assert cliente.llamadas == []
+
+
+def test_pdf_corrupto_da_error_legible_sin_llamar_a_ollama():
+    from ia_local.flujos import ErrorArchivo
+
+    cliente = ClienteFalso()
+    with pytest.raises(ErrorArchivo) as e:
+        desde_pdf(cliente, CONFIG, b"esto no es un pdf", contratos.analizar)
+    assert str(e.value).startswith("No se pudo leer el PDF")
+    assert cliente.llamadas == []
+
+
+def test_audio_ilegible_da_error_legible_sin_llamar_a_ollama():
+    from ia_local.flujos import ErrorArchivo
+
+    def transcribir(*_):
+        raise RuntimeError("Invalid data found when processing input")
+
+    cliente = ClienteFalso()
+    with pytest.raises(ErrorArchivo) as e:
+        desde_audio(cliente, CONFIG, b"x", "mp3", reuniones.minuta, transcribir=transcribir)
+    assert str(e.value).startswith("No se pudo transcribir el audio")
+    assert cliente.llamadas == []

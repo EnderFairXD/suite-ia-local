@@ -4,7 +4,7 @@ from contextlib import contextmanager
 import streamlit as st
 
 from ia_local.correo import ErrorCorreo
-from ia_local.flujos import EntradaVacia
+from ia_local.flujos import EntradaVacia, ErrorArchivo
 from ia_local.llm import Config, ErrorOllama, crear_cliente
 from ia_local.troceado import ResultadoLargo
 
@@ -19,7 +19,7 @@ def con_errores_legibles():
     """Los fallos previstos se muestran como un mensaje, no como una traza."""
     try:
         yield
-    except (ErrorOllama, ErrorCorreo, EntradaVacia) as e:
+    except (ErrorOllama, ErrorCorreo, EntradaVacia, ErrorArchivo) as e:
         st.error(str(e))
 
 

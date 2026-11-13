@@ -3,11 +3,14 @@ import math
 import re
 from dataclasses import dataclass
 
-from ia_local.llm import CARACTERES_POR_TOKEN, Config, estimar_tokens, preguntar
+from ia_local.llm import CARACTERES_POR_TOKEN, Config, ErrorOllama, estimar_tokens, preguntar
 
 # Tokens que se dejan libres para la respuesta del modelo.
 RESERVA_RESPUESTA = 1024
 SEPARADOR = "\n\n---\n\n"
+# Por debajo de esto no hay sitio para el texto: con CONTEXTO muy bajo se avisa en vez de
+# trocear en miles de pedazos.
+PRESUPUESTO_MINIMO = 256
 
 
 @dataclass(frozen=True)
@@ -100,6 +103,12 @@ def procesar_largo(cliente, config: Config, texto: str, *, sistema_final: str, s
     if estimar_tokens(texto) <= _presupuesto(config, sistema_final):
         r = preguntar(cliente, config, sistema_final, texto, temperatura)
         return ResultadoLargo(r.texto, 1, r.posible_recorte)
+
+    if min(_presupuesto(config, sistema_parte), _presupuesto(config, sistema_combinar)) < PRESUPUESTO_MINIMO:
+        raise ErrorOllama(
+            f"CONTEXTO={config.contexto} es demasiado pequeño para dividir este texto en partes. "
+            "Súbelo en el .env (al menos 2048)."
+        )
 
     trozos = trocear(texto, _presupuesto(config, sistema_parte) - estimar_tokens("Parte 999 de 999:\n\n"))
     parciales, recorte = [], False
