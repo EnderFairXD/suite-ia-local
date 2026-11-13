@@ -46,8 +46,9 @@ def estimar_tokens(texto: str) -> int:
     return math.ceil(len(texto) / CARACTERES_POR_TOKEN)
 
 
-def crear_cliente(config: Config) -> ollama.Client:
-    return ollama.Client(host=config.base_url)
+def crear_cliente(config: Config, timeout: float | None = None) -> ollama.Client:
+    """Sin límite de tiempo por defecto: generar un informe largo puede tardar minutos."""
+    return ollama.Client(host=config.base_url, timeout=timeout)
 
 
 def _traducir_error(error: Exception, config: Config) -> ErrorOllama:
